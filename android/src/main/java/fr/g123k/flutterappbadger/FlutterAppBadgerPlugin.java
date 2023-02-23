@@ -8,6 +8,15 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.MethodCall;
 import me.leolin.shortcutbadger.ShortcutBadger;
+import android.annotation.TargetApi;
+import android.app.IntentService;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
+import android.util.Log;
 
 /**
  * FlutterAppBadgerPlugin
@@ -17,6 +26,8 @@ public class FlutterAppBadgerPlugin implements MethodCallHandler, FlutterPlugin 
   private Context applicationContext;
   private MethodChannel channel;
   private static final String CHANNEL_NAME = "g123k/flutter_app_badger";
+  private NotificationManager mNotificationManager;
+  private int notificationId = 0;
 
   /**
    * Plugin registration.
@@ -27,6 +38,7 @@ public class FlutterAppBadgerPlugin implements MethodCallHandler, FlutterPlugin 
     channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), CHANNEL_NAME);
     channel.setMethodCallHandler(this);
     applicationContext = flutterPluginBinding.getApplicationContext();
+    mNotificationManager = (NotificationManager) applicationContext.getSystemService(applicationContext.NOTIFICATION_SERVICE);
   }
 
   @Override
@@ -38,6 +50,27 @@ public class FlutterAppBadgerPlugin implements MethodCallHandler, FlutterPlugin 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
     if (call.method.equals("updateBadgeCount")) {
+      if (Build.MANUFACTURER.equalsIgnoreCase("Xiaomi")) {
+        Notification.Builder  builder = new Notification.Builder(applicationContext)
+                .setContentTitle(call.argument("title").toString())
+                .setContentText(call.argument("description").toString())
+                .setSmallIcon(applicationContext.getApplicationInfo().icon);
+
+        mNotificationManager.cancel(notificationId);
+        notificationId++;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          setupNotificationChannel();
+
+          builder.setChannelId(call.argument("notificationChanel").toString());
+        }
+        Notification notification = builder.build();
+        ShortcutBadger.applyNotification(applicationContext, notification, Integer.valueOf(call.argument("count").toString()));
+        mNotificationManager.notify(notificationId, notification);
+      }
+      else {
+        Log.d("App Badger: ", "Other Model detected");
+      }
       ShortcutBadger.applyCount(applicationContext, Integer.valueOf(call.argument("count").toString()));
       result.success(null);
     } else if (call.method.equals("removeBadge")) {
@@ -48,5 +81,13 @@ public class FlutterAppBadgerPlugin implements MethodCallHandler, FlutterPlugin 
     } else {
       result.notImplemented();
     }
+  }
+
+  @TargetApi(Build.VERSION_CODES.O)
+  private void setupNotificationChannel() {
+    NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL, "ShortcutBadger Sample",
+            NotificationManager.IMPORTANCE_DEFAULT);
+
+    mNotificationManager.createNotificationChannel(channel);
   }
 }
