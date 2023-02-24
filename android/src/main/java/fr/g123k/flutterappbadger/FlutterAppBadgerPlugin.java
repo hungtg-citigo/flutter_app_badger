@@ -26,6 +26,7 @@ public class FlutterAppBadgerPlugin implements MethodCallHandler, FlutterPlugin 
   private Context applicationContext;
   private MethodChannel channel;
   private static final String CHANNEL_NAME = "g123k/flutter_app_badger";
+  private static final String NOTIFICATION_CHANNEL = "Silent Channel";
   private NotificationManager mNotificationManager;
   private int notificationId = 0;
 
@@ -85,7 +86,7 @@ public class FlutterAppBadgerPlugin implements MethodCallHandler, FlutterPlugin 
 
   @TargetApi(Build.VERSION_CODES.O)
   private void setupNotificationChannel() {
-    NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL, "ShortcutBadger Sample",
+    NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL, "Silent Channel",
             NotificationManager.IMPORTANCE_DEFAULT);
 
     mNotificationManager.createNotificationChannel(channel);
